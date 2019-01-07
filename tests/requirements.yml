@@ -1,16 +1,6 @@
 ---
-sources:
-  intermax-gitlab:
-    type: gitlab
-    url: https://git.intermax.nl/
-    token: 
-  github:
-    type: github
-    url: https://github.com
-    token: 
-
-requirements:
-  - src: intermax-gitlab
-    dst: lib/
-    project_id: 250
-    version: 1.0.2
+- name: cmdb-callback
+  repo: https://git.intermax.nl/team-automation/configuration_management/ansible/core/modules/cmdb-callback.git
+  type: gitlab
+  version: 1.0.2
+  dest: lib/
