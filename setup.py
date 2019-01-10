@@ -7,7 +7,6 @@ with open("README.md", "r") as fh:
 setuptools.setup(
     name='gip',
     version='0.1',
-    scripts=['gip'],
     author="Wilmar den Ouden",
     author_email="wilmaro@intermax.nl",
     description="A language agnostic dependency manager on top of the Gitlab API",
@@ -19,5 +18,15 @@ setuptools.setup(
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
-    ]
+    ],
+    install_requires=[
+        'pyyaml',
+        'python-gitlab',
+        'github3.py'
+    ],
+    entry_points = {
+        'console_scripts': [
+            'gip = gip.shell:main'
+        ]
+    }
 )
