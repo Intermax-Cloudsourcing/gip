@@ -3,6 +3,7 @@ venv/
 lib/
 __pycache__/
 /dist/
+/dist/bdist.linux-x86_64
 *.pyc
 *.egg-info
 *.egg

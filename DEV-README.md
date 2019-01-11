@@ -25,8 +25,10 @@ gip --gitlab-token=<token> --github-token=<token> requirements.yml
             "name": "Python: Current File (Integrated Terminal)",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/gip/main.py",
-            "args" : ["--gitlab-token=-hBtB7xJ3msiRtsHBFrQ", "--github-token=c58e0b2750301008b0051a4b9275a9aad687c9df", "tests/requirements.yml"],
+            "program": "${workspaceFolder}/venv/bin/gip",
+            "args" : ["--gitlab-token=<token>",
+                "--github-token=<token>",
+                "install", "-r", "tests/requirements.yml"],
             "console": "integratedTerminal"
         }
     ]
@@ -34,7 +36,10 @@ gip --gitlab-token=<token> --github-token=<token> requirements.yml
 ```
 
 
-## Draft release
+## Release
 ```bash
-python setup.py sdist
+pip install -r test-requirements.txt
+make -f build/Makefile clean
+make -f build/Makefile build
+make -f build/Makefile push
 ```
