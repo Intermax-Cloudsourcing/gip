@@ -1,7 +1,7 @@
 ---
 - name: ansible-role-plex
   repo: https://github.com/wilmardo/ansible-role-plex
-  type: github
+  type: yolo
   version: 2.1.0
   dest: lib/
 
