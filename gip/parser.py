@@ -1,14 +1,37 @@
 import yaml
+import cerberus
 
 from gip import logger
+from gip import models
 
 LOG = logger.get_logger(__name__)
+
+
+def validate_requirements(requirements):
+    """ Validate requirements against scheme
+
+    :param requirements: List containing requirements
+    :type list:
+
+    :rtype: boolean
+    """
+    # Convert to dict since Cerberus only works with dicts
+    requirements_dict = {
+        'requirements': requirements
+    }
+    scheme = models.requirements.get_validation_scheme()
+    validator = cerberus.Validator(scheme)
+    return {
+        'result': validator.validate(requirements_dict),
+        'errors': validator.errors
+    }
+
 
 def parse_requirements_file(path):
     """Parse requirements
 
-    :param requirements_file: path to yamlfile
-    :type requirements_file: pathlib.Path
+    :param path: path to yamlfile
+    :type path: pathlib.Path
 
     :rtype: object
     """

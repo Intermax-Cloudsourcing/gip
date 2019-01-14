@@ -1,3 +1,4 @@
+import sys
 import click
 import logging
 import pathlib
@@ -5,6 +6,7 @@ from urllib.parse import urlsplit
 
 from gip import logger
 from gip import parser
+from gip import exceptions
 from gip.sources import github, gitlab
 
 LOG = logger.get_logger(__name__)
@@ -22,14 +24,19 @@ def _get_base_url(repo):
 @click.option(
     '--requirements',
     '-r',
-    default=None,
     help='Requirements file to install')
 def install(ctx, requirements):
     """
     Install dependencies
     """
     args = ctx.obj.get('args')
+    # Parse requirements to Python object
     requirements = parser.parse_requirements_file(requirements)
+
+    # Validate requirements
+    result = parser.validate_requirements(requirements)
+    if result['result'] is False:
+        raise exceptions.ValidationError(file=requirements, errors=result['errors'])
 
     for requirement in requirements:
         source = None
