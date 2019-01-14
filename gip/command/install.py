@@ -45,8 +45,8 @@ def install(ctx, requirements):
 
     if any(d['type'] == 'github' for d in requirements) and args['github_token'] is None:
         # When a type gitlab is defined token and token not passed
-        LOG.error("Github repo in requirements but no token passed, use --github-token")
-        return
+        LOG.warn("Github repo in requirements but no token passed. \
+                    This could result in rate limiting on the API, use --github-token to mitigate.")
 
     for requirement in requirements:
         try:
