@@ -1,29 +1,41 @@
 import github3
 
 from gip import logger
+from gip import exceptions
 from gip.sources import base
 
 LOG = logger.get_logger(__name__)
 
 
 class Github(base.Source):
+    """ Github source """
     def __init__(self, token):
-        self.gh = github3.login(token=token)
+        try:
+            self.gh = github3.login(token=token)
+        except github3.exceptions.AuthenticationFailed:
+            raise exceptions.AuthenticationError(url="https://github.com")
 
     def get_archive(self, repo, version, dest):
         """ Downloads archive in dest_dir"""
         # Get repository from Gitlab API
-        repository = self.gh.repository(
-            owner=self.get_owner(repo),
-            repository=self.get_repo_name(repo)
-        )
+        try:
+            repository = self.gh.repository(
+                owner=self.get_owner(repo),
+                repository=self.get_repo_name(repo)
+            )
+        except github3.exceptions.ConnectionError:
+            raise exceptions.HttpError(url=repo)
+        except github3.exceptions.NotFoundError:
+            raise exceptions.RepoNotFound(repo=repo)
 
         # Download repository archive to dest
-        repository.archive(
+        result = repository.archive(
             format='tarball',
             path=dest,
             ref=version
         )
+        if result is False:
+            raise exceptions.ArchiveNotFound(repo=repo, version=version)
 
     def get_owner(self, url):
         """ Get owner name from repo url"""

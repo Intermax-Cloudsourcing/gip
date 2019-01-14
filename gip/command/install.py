@@ -38,57 +38,62 @@ def install(ctx, requirements):
     if result['result'] is False:
         raise exceptions.ValidationError(file=requirements, errors=result['errors'])
 
-    for requirement in requirements:
-        source = None
+    if any(d['type'] == 'gitlab' for d in requirements) and args['gitlab_token'] is None:
+        # When a type gitlab is defined token and token not passed
+        LOG.error("Gitlab repo in requirements but no token passed, use --gitlab-token")
+        return
 
-        if requirement['type'] == 'gitlab':
-            # Repo comes from Gitlab, check for API token
-            if args['gitlab_token']:
-                # Init gitlab object
+    if any(d['type'] == 'github' for d in requirements) and args['github_token'] is None:
+        # When a type gitlab is defined token and token not passed
+        LOG.error("Github repo in requirements but no token passed, use --github-token")
+        return
+
+    for requirement in requirements:
+        try:
+            if requirement['type'] == 'gitlab':
+                # Init Gitlab object
                 source = gitlab.Gitlab(
                     url=_get_base_url(repo=requirement['repo']),
                     token=args['gitlab_token']
                 )
-            else:
-                LOG.warn("No Gitlab API token provided")
-                return
-
-        elif requirement['type'] == 'github':
-            # Repo comes from Github check for API token
-            if args['github_token']:
+            elif requirement['type'] == 'github':
                 # Init Github object
                 source = github.Github(
                     token=args['github_token']
                 )
-            else:
-                LOG.warn("No Github API token provided")
-                return
+        except exceptions.RepoNotFound as e:
+            LOG.error(e)
+        except exceptions.HttpError as e:
+            LOG.error(e)
+        except exceptions.AuthenticationError as e:
+            LOG.error(e)
 
-        if source:
-            # Convert dest to absolute path
-            dest = pathlib.Path(requirement['dest']).resolve()
-            archive_name = "{}.zip".format(requirement['name'])
-            # Append name to destination directory
-            archive_dest = dest.joinpath(archive_name)
+        # Convert dest to absolute path
+        dest = pathlib.Path(requirement['dest']).resolve()
+        archive_name = "{}.zip".format(requirement['name'])
+        # Append name to destination directory
+        archive_dest = dest.joinpath(archive_name)
 
-            # Get the archive
-            try:
-                source.get_archive(
-                    repo=requirement['repo'],
-                    version=requirement['version'],
-                    dest=archive_dest
-                )
-            except Exception as e:
-                LOG.exception(e)
+        # Get the archive
+        try:
+            source.get_archive(
+                repo=requirement['repo'],
+                version=requirement['version'],
+                dest=archive_dest
+            )
+        except exceptions.RepoNotFound as e:
+            LOG.error(e)
+        except FileNotFoundError:
+            LOG.error("Destination directory does not exist")
 
-            # Extract archive to location
-            try:
-                source.extract_archive(
-                    src=archive_dest,
-                    dest=dest,
-                    name=requirement['name']
-                )
-            except Exception as e:
-                LOG.exception(e)
-        else:
-            LOG.warn('{} has no valid type'.format(requirement['name']))
+        # Extract archive to location
+        try:
+            source.untar_archive(
+                src=archive_dest,
+                dest=dest,
+                name=requirement['name']
+            )
+        except FileNotFoundError:
+            LOG.error("Archive not found: {}".format(archive_dest))
+        except TypeError:
+            LOG.error("Downloaded archive is not a valid tar archive: {}".format(archive_dest))

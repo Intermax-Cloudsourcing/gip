@@ -13,7 +13,7 @@ class Source():
     def get_archive(self, repo, version):
         raise NotImplementedError
 
-    def extract_archive(self, src, dest, name, remove_src=True):
+    def untar_archive(self, src, dest, name, remove_src=True):
         """ Extract archive to destination, zip and tar supported """
         if tarfile.is_tarfile(src):
             archive = tarfile.open(src)
@@ -27,4 +27,4 @@ class Source():
                     dst=dest.joinpath(name)
                 )
         else:
-            LOG.warn("Downloaded archive is not a valid archive: {}".format(src))
+            raise TypeError
