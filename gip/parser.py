@@ -16,12 +16,15 @@ def validate_requirements(requirements):
     :rtype: boolean
     """
     # Convert to dict since Cerberus only works with dicts
-    dict = {
+    requirements_dict = {
         'requirements': requirements
     }
     scheme = models.requirements.get_validation_scheme()
     validator = cerberus.Validator(scheme)
-    return validator.validate(dict)
+    return {
+        'result': validator.validate(requirements_dict),
+        'errors': validator.errors
+    }
 
 
 def parse_requirements_file(path):

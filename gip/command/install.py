@@ -35,8 +35,8 @@ def install(ctx, requirements):
 
     # Validate requirements
     result = parser.validate_requirements(requirements)
-    if result is False:
-        raise exceptions.ValidationError(file=requirements, errors=result.errors)
+    if result['result'] is False:
+        raise exceptions.ValidationError(file=requirements, errors=result['errors'])
 
     for requirement in requirements:
         source = None
