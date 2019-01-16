@@ -2,13 +2,12 @@ import cerberus
 from gip.models import base
 
 
-class Requirements(base.Model):
+class Lock(base.Model):
 
-    def __init__(self, requirements):
-        self.requirements = requirements
+    def __init__(self):
         super().__init__(
             scheme={
-                'requirements': {
+                'lock': {
                     'type': 'list',
                     'schema': {
                         'type': 'dict',
@@ -41,16 +40,16 @@ class Requirements(base.Model):
             }
         )
 
-    def validate(self, requirements):
-        """ Validate requirements against scheme
+    def validate(self, locks):
+        """ Validate locks against scheme
 
-        :param requirements: List containing requirements
+        :param data: List containing lockdata
         :type list:
 
         :rtype: boolean
         """
         # Convert to dict since Cerberus only works with dicts
-        requirements_dict = {
-            'requirements': requirements
+        lock_dict = {
+            'lock': locks
         }
-        super().validate(requirements_dict)
+        super().validate(lock_dict)

@@ -9,17 +9,19 @@ LOG = logger.get_logger(__name__)
 
 class Github(base.Source):
     """ Github source """
-    def __init__(self, token):
+    def __init__(self, repo, version, token):
+        # Set version
+        self.version = version
+
+        # Init Github object
         try:
             self.gh = github3.login(token=token)
         except github3.exceptions.AuthenticationFailed:
             raise exceptions.AuthenticationError(url="https://github.com")
 
-    def get_archive(self, repo, version, dest):
-        """ Downloads archive in dest_dir"""
         # Get repository from Gitlab API
         try:
-            repository = self.gh.repository(
+            self.repository = self.gh.repository(
                 owner=self.get_owner(repo),
                 repository=self.get_repo_name(repo)
             )
@@ -28,14 +30,16 @@ class Github(base.Source):
         except github3.exceptions.NotFoundError:
             raise exceptions.RepoNotFound(repo=repo)
 
+    def get_archive(self, repo, dest):
+        """ Downloads archive in dest_dir"""
         # Download repository archive to dest
-        result = repository.archive(
+        result = self.repository.archive(
             format='tarball',
             path=dest,
-            ref=version
+            ref=self.version
         )
         if result is False:
-            raise exceptions.ArchiveNotFound(repo=repo, version=version)
+            raise exceptions.ArchiveNotFound(repo=repo, version=self.version)
 
     def get_owner(self, url):
         """ Get owner name from repo url"""
@@ -51,3 +55,6 @@ class Github(base.Source):
         # Split repo_name from url
         repo_name = url.split("/")[4]
         return repo_name
+
+    def get_commit_hash(self, version):
+        raise NotImplementedError

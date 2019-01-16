@@ -1,6 +1,6 @@
 ---
 - name: ansible-role-plex
-  repo: https://github.com/wwilmardo/ansible-role-plex
+  repo: https://github.com/wilmardo/ansible-role-plex
   type: github
   version: 2.1.0
   dest: lib/
