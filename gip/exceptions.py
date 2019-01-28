@@ -33,16 +33,14 @@ class ValidationError(Exception):
     """ Exception trown when authentication error with source
 
         Attributes:
-            file -- filename with validation error
-            erros -- errors in file as dict
+            errors -- errors as dict
     """
 
-    def __init__(self, file, errors):
-        self.file = file
+    def __init__(self, errors):
         self.errors = errors
 
     def __str__(self):
-        return "Validation errors in {file}: {errors}".format(file=self.file, errors=self.errors)
+        return "Validation errors: {errors}".format(errors=self.errors)
 
 
 class AuthenticationError(Exception):
@@ -72,3 +70,37 @@ class HttpError(Exception):
 
     def __str__(self):
         return "Request could not complete for: {url}".format(url=self.url)
+
+
+class DirectoryNotEmpty(Exception):
+    """ Exception trown when directory not empty
+
+        Attributes:
+            directory -- path of not empty directory
+    """
+
+    def __init__(self, directory):
+        self.directory = directory
+
+    def __str__(self):
+        return "Directory not empty: {directory}".format(
+            directory=self.directory
+        )
+
+
+class ParserError(Exception):
+    """ Exception trown when parsing does not complete
+
+        Attributes:
+            file -- path to file which has errors
+            error -- error message of parser
+    """
+
+    def __init__(self, file, error):
+        self.file = file
+        self.error = error
+
+    def __str__(self):
+        return "Parsing failed for {file} due to {error}".format(
+            file=self.file,
+            error=self.error)
