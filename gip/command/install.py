@@ -143,17 +143,16 @@ def install(ctx, requirements):
                     e = "Archive not found: {archive}".format(
                         archive=archive_dest
                     )
-                    archive_dest = None  # No remove when not found
+                    util.sysexit_with_message(e)  # No need for remove
                 elif type(e) is TypeError:
                     e = "Downloaded archive is not a valid tar archive: \
                     {archive}".format(
                         archive=archive_dest
                     )
-                # Cleanup
-                _cleanup_and_exit(
-                    exception=e,
-                    archive=archive_dest
-                )
+                # Cleanup archive
+                util.remove_file(archive_dest)
+                # Exit with message
+                util.sysexit_with_message(e)
 
             # No exceptions add to new_lock since succesfull download
             LOG.success("{requirement} successfully installed".format(
@@ -212,11 +211,3 @@ def _parse_and_validate(path, type):
 
     # Return parsed and validated data
     return data
-
-
-def _cleanup_and_exit(exception, archive=None):
-    if archive:
-        # Remove archive
-        util.remove_file(archive)
-    # Exit with message
-    util.sysexit_with_message(exception)
