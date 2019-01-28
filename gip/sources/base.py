@@ -1,6 +1,5 @@
 import os
 import tarfile
-from urllib.parse import urlsplit
 
 from gip import logger
 from gip import exceptions
@@ -25,6 +24,8 @@ class Source():
             if remove_src:
                 # No need for try/except only raises on directory.
                 os.remove(src)
+
+            # Rename when name is passed
             if name:
                 extracted_folder_name = archive.getmembers()[0].name
                 try:

@@ -9,6 +9,7 @@ LOG = logger.get_logger(__name__)
 
 class Github(base.Source):
     """ Github source """
+
     def __init__(self, repo, version, token):
         # Set version
         self.version = version
@@ -30,7 +31,7 @@ class Github(base.Source):
         except github3.exceptions.NotFoundError:
             raise exceptions.RepoNotFound(repo=repo)
 
-    def get_archive(self, repo, dest):
+    def get_archive(self, dest):
         """ Downloads archive in dest_dir"""
         # Download repository archive to dest
         result = self.repository.archive(
@@ -39,7 +40,10 @@ class Github(base.Source):
             ref=self.version
         )
         if result is False:
-            raise exceptions.ArchiveNotFound(repo=repo, version=self.version)
+            raise exceptions.ArchiveNotFound(
+                repo=self.repository.clone_url,
+                version=self.version
+            )
 
     def get_owner(self, url):
         """ Get owner name from repo url"""
@@ -56,5 +60,12 @@ class Github(base.Source):
         repo_name = url.split("/")[4]
         return repo_name
 
-    def get_commit_hash(self, version):
-        raise NotImplementedError
+    def get_commit_hash(self):
+        """ Get commit hash for this source """
+        commits = self.repository.commits(
+            sha=self.version,
+            number=1
+        )
+        # Get first and only (number=1) item from iterator
+        commit = next(commits)
+        return commit.sha

@@ -1,15 +1,11 @@
-import sys
 import click
-import logging
 import pathlib
-from urllib.parse import urlsplit
 
 from gip import logger
 from gip import util
 from gip import exceptions
-from gip import util
-from gip.models.requirements import Requirements
-from gip.sources import github, gitlab
+from gip import model
+from gip import sources
 
 LOG = logger.get_logger(__name__)
 
@@ -27,162 +23,200 @@ def install(ctx, requirements):
     args = ctx.obj.get('args')
 
     # Set passed requirement path as variable
-    requirements_path = requirements
+    requirements_path = pathlib.Path(requirements)
 
-    # Parse requirements to Python object
-    try:
-        requirements = Requirements(util.read_yaml(path=requirements_path))
-    except exceptions.ParserError as e:
-        util.sysexit_with_message(e)
-
-    # Validate requirements
-    try:
-        Requirements.validate(requirements=requirements)
-    except exceptions.ValidationError as e:
-        util.sysexit_with_message("Parsing failed for {file} due to {errors}".format(
-            file=requirements_path,
-            errors=e.error
+    # Parse requirements file to Python object
+    if requirements_path.is_file():
+        requirements = _parse_and_validate(
+            path=requirements_path,
+            type='requirements'
+        )
+    else:
+        util.sysexit_with_message("Passed requirement file does not exist: \
+        {path}".format(
+            path=requirements_path
         ))
 
     # After parsing check if a token is mandatory or advised
-    if any(d['type'] == 'gitlab' for d in requirements) and args['gitlab_token'] is None:
-        util.sysexit_with_message("Gitlab repo in requirements but no token passed, use --gitlab-token")
-    if any(d['type'] == 'github' for d in requirements) and args['github_token'] is None:
-        LOG.warn("Github repo in requirements but no token passed. \
-                    This could result in rate limiting on the API, use --github-token to mitigate.")
+    if (any(d['type'] == 'gitlab' for d in requirements) and
+            args['gitlab_token'] is None):
+        util.sysexit_with_message(
+            "Gitlab repo in requirements but no token passed, \
+            use --gitlab-token"
+        )
+    if (any(d['type'] == 'github' for d in requirements) and
+            args['github_token'] is None):
+        util.sysexit_with_message(
+            "Github repo in requirements but no token passed, \
+            use --github-token"
+        )
 
     # Init lockfile
-    lock_file = pathlib.Path(args['lock_file'])
-    if lock_file.is_file():
-        current_lock = util.read_yaml(args['lock_file'])
-    else:
-        LOG.info("Lock file does not exist, will be created at {path}".format(path=lock_file))
+    locks_path = pathlib.Path(args['lock_file'])
 
-    # Loop requirements for downloading
-    new_lock = []
-    for requirement in requirements:
-        try:
-            if requirement['type'] == 'gitlab':
-                # Init Gitlab object
-                source = gitlab.Gitlab(
-                    repo=requirement['repo'],
-                    version=requirement['version'],
-                    token=args['gitlab_token']
-                )
-            elif requirement['type'] == 'github':
-                # Init Github object
-                source = github.Github(
-                    repo=requirement['repo'],
-                    version=requirement['version'],
-                    token=args['github_token']
-                )
-        except exceptions.RepoNotFound as e:
-            LOG.error(e)
-        except exceptions.HttpError as e:
-            LOG.error(e)
-        except exceptions.AuthenticationError as e:
-            LOG.error(e)
-
-        # if source.get_commit_hash() != lock_file['']:
-        # Convert dest to absolute path
-        dest = pathlib.Path(requirement['dest']).resolve()
-        archive_name = "{}.zip".format(requirement['name'])
-        # Append name to destination directory
-        archive_dest = dest.joinpath(archive_name)
-
-        # Get the archive
-        try:
-            source.get_archive(
-                dest=archive_dest
-            )
-        except FileNotFoundError:
-            # Write current state to lock
-            _write_lock_file(
-                path=lock_file,
-                current_lock=current_lock,
-                new_lock=new_lock
-            )
-            util.sysexit_with_message(
-            "Destination directory for {name} ({dest}) does not exist".format(
-                name=requirement['name'],
-                dest=requirement['dest']
-            ))
-
-        # Extract archive to location
-        try:
-            source.untar_archive(
-                src=archive_dest,
-                dest=dest,
-                name=requirement['name']
-            )
-        except FileNotFoundError:
-            _write_lock_file(
-                path=lock_file,
-                current_lock=current_lock,
-                new_lock=new_lock
-            )
-            util.sysexit_with_message(
-                "Archive not found: {}".format(archive_dest))
-        except TypeError:
-            # Remove archive
-            util.remove_file(archive_dest)
-            # Write current state to lock
-            _write_lock_file(
-                path=lock_file,
-                current_lock=current_lock,
-                new_lock=new_lock
-            )
-            util.sysexit_with_message(
-                "Downloaded archive is not a valid tar archive: {}".format(archive_dest))
-        except exceptions.DirectoryNotEmpty as e:
-            # Remove archive
-            util.remove_file(archive_dest)
-            # Write current state to lock
-            _write_lock_file(
-                path=lock_file,
-                current_lock=current_lock,
-                new_lock=new_lock
-            )
-            util.sysexit_with_message(e)
-
-        # No exceptions add to new_lock since succesfull download
-        new_lock.append(
-            name=requirement['name'],
-            version=source.get_commit_hash()
+    # Init current_lock list
+    current_lock = {}
+    if locks_path.is_file():
+        current_lock = _parse_and_validate(
+            path=locks_path,
+            type='locks'
         )
+    else:
+        LOG.info("Lock file does not exist, will be created at {path}".format(
+            path=locks_path)
+        )
+
+    # Init new_lock list
+    new_lock = {}
+    # Loop requirements for downloading
+    for requirement in requirements:
+        if requirement['name'] in current_lock:
+            LOG.info("{requirement} already installed, skipping".format(
+                requirement=requirement['name'])
+            )
+        else:
+            try:
+                if requirement['type'] == 'gitlab':
+                    # Init Gitlab object
+                    source = sources.gitlab.Gitlab(
+                        repo=requirement['repo'],
+                        version=requirement['version'],
+                        token=args['gitlab_token']
+                    )
+                elif requirement['type'] == 'github':
+                    # Init Github object
+                    source = sources.github.Github(
+                        repo=requirement['repo'],
+                        version=requirement['version'],
+                        token=args['github_token']
+                    )
+            except exceptions.RepoNotFound as e:
+                util.sysexit_with_message(e)
+            except exceptions.HttpError as e:
+                util.sysexit_with_message(e)
+            except exceptions.AuthenticationError as e:
+                util.sysexit_with_message(e)
+
+            # Convert dest to absolute path
+            dest = pathlib.Path(requirement['dest']).resolve()
+            # Create archive name (ex. ansible-role-plex.tar.gz)
+            archive_name = "{}.tar.gz".format(requirement['name'])
+            # Append name to destination directory
+            archive_dest = dest.joinpath(archive_name)
+
+            # Get the archive
+            try:
+                source.get_archive(
+                    dest=archive_dest
+                )
+            except FileNotFoundError:
+                # Write current state to lock
+                _write_lock_file(
+                    path=locks_path,
+                    current_lock=current_lock,
+                    new_lock=new_lock
+                )
+                util.sysexit_with_message(
+                    "Destination directory for {name} ({dest}) \
+                    does not exist".format(
+                        name=requirement['name'],
+                        dest=dest
+                    )
+                )
+
+            # Extract archive to location
+            try:
+                source.untar_archive(
+                    src=archive_dest,
+                    dest=dest,
+                    name=requirement['name']
+                )
+            except Exception as e:
+                # Write current state to lock
+                _write_lock_file(
+                    path=locks_path,
+                    current_lock=current_lock,
+                    new_lock=new_lock
+                )
+                # Set better description for generic Python errors
+                if type(e) is FileNotFoundError:
+                    e = "Archive not found: {archive}".format(
+                        archive=archive_dest
+                    )
+                    archive_dest = None  # No remove when not found
+                elif type(e) is TypeError:
+                    e = "Downloaded archive is not a valid tar archive: \
+                    {archive}".format(
+                        archive=archive_dest
+                    )
+                # Cleanup
+                _cleanup_and_exit(
+                    exception=e,
+                    archive=archive_dest
+                )
+
+            # No exceptions add to new_lock since succesfull download
+            LOG.success("{requirement} successfully installed".format(
+                    requirement=requirement['name'])
+                )
+            new_lock[requirement['name']] = source.get_commit_hash()
 
     # End for loop
     _write_lock_file(
-        path=lock_file,
+        path=locks_path,
         current_lock=current_lock,
         new_lock=new_lock
     )
+
 
 def _write_lock_file(path, current_lock, new_lock):
     """
     Write current state to lock file
     """
-    # No current lock just write to file
-    if current_lock is False:
-        util.write_yaml(
-            path=path,
-            data=current_lock
+    # Check if new_lock has data
+    if new_lock:
+        # No current lock just write to file
+        if not current_lock:
+            util.write_yaml(
+                path=path,
+                data=new_lock
+            )
+        else:
+            # Current lock, merge the two and write to file
+            util.write_yaml(
+                path=path,
+                data=util.merge_dicts(current_lock, new_lock)
+            )
+
+
+def _parse_and_validate(path, type):
+    """ Parse and validate lock or requirements file """
+    try:
+        data = util.read_yaml(path=path)
+    except exceptions.ParserError as e:
+        util.sysexit_with_message(e)
+
+    # Validate requirements file
+    try:
+        model.scheme.validate(
+            type=type,
+            data=data
         )
-    else:
-        # Current lock, merge the two and write to file
-        print()
+    except exceptions.ValidationError as e:
+        util.sysexit_with_message(
+            "Parsing failed for {file} due to {errors}".format(
+                file=path,
+                errors=e.errors
+            )
+        )
+
+    # Return parsed and validated data
+    return data
 
 
-# TODO: Implement this to keep the exception handling more readable
-# def _cleanup_and_exit(exception, archive=None):
-#     if archive:
-#         # Remove archive
-#         util.remove_file(archive)
-
-#     # Write current state to lock
-#     _write_lock_file(
-#         path=lock_file,
-#         current_lock=current_lock,
-#         new_lock=new_lock
-#     )
-#     util.sysexit_with_message(exception)
+def _cleanup_and_exit(exception, archive=None):
+    if archive:
+        # Remove archive
+        util.remove_file(archive)
+    # Exit with message
+    util.sysexit_with_message(exception)

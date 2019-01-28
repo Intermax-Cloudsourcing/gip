@@ -45,9 +45,13 @@ class Gitlab(base.Source):
         except gitlab.GitlabAuthenticationError:
             raise exceptions.AuthenticationError(url=self.project.web_url)
         except gitlab.GitlabListError:
-            raise exceptions.ArchiveNotFound(repo=self.project.web_url, version=self.version)
+            raise exceptions.ArchiveNotFound(
+                repo=self.project.web_url,
+                version=self.version
+            )
 
     def get_commit_hash(self):
+        """ Get commit hash for this source """
         commits = self.project.commits.list(ref_name=self.version)
         return commits[0].id
 

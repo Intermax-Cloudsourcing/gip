@@ -1,11 +1,9 @@
 import yaml
-import cerberus
 import sys
 import os
 
 from gip import logger
 from gip import exceptions
-from gip import models
 
 LOG = logger.get_logger(__name__)
 
@@ -27,7 +25,9 @@ def read_yaml(path):
         try:
             return yaml.safe_load(file_stream)
         except yaml.YAMLError as e:
-            raise exceptions.ParserError(e)
+            raise exceptions.ParserError(
+                file=path,
+                error=e)
         finally:
             file_stream.close()
 
@@ -53,7 +53,9 @@ def write_yaml(path, data):
                 default_flow_style=False
             )
         except yaml.YAMLError as e:
-            raise exceptions.ParserError(e)
+            raise exceptions.ParserError(
+                file=path,
+                error=e)
         finally:
             file_stream.close()
 
@@ -71,5 +73,16 @@ def remove_file(path):
     """
     Remove file from disk
     """
-    #TODO: fix some exception handling
+    # TODO: fix some exception handling
     os.remove(path)
+
+
+def merge_dicts(*dict_args):
+    """
+    Given any number of dicts, shallow copy and merge into a new dict,
+    precedence goes to key value pairs in latter dicts.
+    """
+    result = {}
+    for dictionary in dict_args:
+        result.update(dictionary)
+    return result

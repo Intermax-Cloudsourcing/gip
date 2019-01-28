@@ -83,7 +83,9 @@ class DirectoryNotEmpty(Exception):
         self.directory = directory
 
     def __str__(self):
-        return "Directory not empty: {directory}".format(directory=self.directory)
+        return "Directory not empty: {directory}".format(
+            directory=self.directory
+        )
 
 
 class ParserError(Exception):
@@ -94,8 +96,11 @@ class ParserError(Exception):
             error -- error message of parser
     """
 
-    def __init__(self, error):
+    def __init__(self, file, error):
+        self.file = file
         self.error = error
 
     def __str__(self):
-        return "Parsing failed due to {error}".format(error=self.error)
+        return "Parsing failed for {file} due to {error}".format(
+            file=self.file,
+            error=self.error)
