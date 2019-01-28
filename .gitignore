@@ -4,6 +4,8 @@ lib/
 __pycache__/
 /dist/
 /dist/bdist.linux-x86_64
+
+.giplock.yml
 *.pyc
 *.egg-info
 *.egg
