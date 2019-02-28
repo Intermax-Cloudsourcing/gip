@@ -18,10 +18,10 @@ class Github(base.Source):
         Inits Github source
 
         :param repo: url to repository
-        :param version: repository version, tag, branch name or commit sha. Defaults to master
+        :param version: Tag, branch name or commit sha, defaults to master
         :param token: github api token
-        :raise exceptions.AuthenticationError: could not authenticate with Github
-        :raise exceptions.HttpError: could not connect to Github
+        :raise exceptions.AuthenticationError: could not authenticate
+        :raise exceptions.HttpError: could not connect
         :raise exceptions.RepoNotFound: repository not found
         """
         # Set version
@@ -49,13 +49,13 @@ class Github(base.Source):
         Downloads archive in dest_dir
 
         :param dest: path where to download the archive to
-        :raise exceptions.DirectoryDoesNotExists: destination directory does not exist
+        :raise exceptions.DirectoryDoesNotExist: destination dir does not exist
         :raise exceptions.ArchiveNotFound: archive not found
         """
         # Raise error when destination directory does not exists
         dest = pathlib.Path(dest)
         if not dest.parent.is_dir():
-            raise exceptions.DirectoryDoesNotExists(dest)
+            raise exceptions.DirectoryDoesNotExist(dest)
 
         # Download repository archive to dest
         result = self.repository.archive(

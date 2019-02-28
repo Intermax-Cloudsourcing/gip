@@ -107,14 +107,15 @@ class HttpError(Exception):
         """
         return "Request could not complete for: {url}".format(url=self.url)
 
-class DirectoryDoesNotExists(Exception):
+
+class DirectoryDoesNotExist(Exception):
     """
     Exception thrown when directory does not exist
     """
 
     def __init__(self, directory):
         """
-        Inits DirectoryDoesNotExists
+        Inits DirectoryDoesNotExist
 
         :param directory: path of non existing directory
         """
@@ -129,6 +130,7 @@ class DirectoryDoesNotExists(Exception):
         return "Directory does not exist: {directory}".format(
             directory=self.directory
         )
+
 
 class DirectoryNotEmpty(Exception):
     """

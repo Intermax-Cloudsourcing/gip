@@ -28,7 +28,7 @@ LOG = logger.get_logger(__name__)
 )
 def install(ctx, upgrade, requirements):
     """
-    Install dependencies, if already present just skips when version checking is required, pass --upgrade.
+    Install dependencies, if already present just skips when version checking is required, pass --upgrade.  # noqa:E501
 
     :param ctx: click object containing the arguments from global
     :param upgrade: boolean whenever upgrading is enabled
@@ -100,10 +100,12 @@ def install(ctx, upgrade, requirements):
                     exceptions.AuthenticationError) as e:
                 util.sysexit_with_message(e)
 
-            if source.get_commit_hash() == current_lock.get(requirement['name']):
-                LOG.info("{requirement} already the current version, skipping".format(
-                    requirement=requirement['name'])
-                )
+            if source.get_commit_hash() == \
+                    current_lock.get(requirement['name']):
+                LOG.info("{requirement} already the current version, \
+                    skipping".format(
+                        requirement=requirement['name'])
+                    )
             else:
                 # Convert dest to absolute path
                 dest = pathlib.Path(requirement.get('dest', '')).resolve()
@@ -122,7 +124,7 @@ def install(ctx, upgrade, requirements):
                     source.get_archive(
                         dest=archive_dest
                     )
-                except (exceptions.DirectoryDoesNotExists,
+                except (exceptions.DirectoryDoesNotExist,
                         exceptions.AuthenticationError,
                         exceptions.ArchiveNotFound) as e:
                     # Write current state to lock
@@ -140,7 +142,7 @@ def install(ctx, upgrade, requirements):
                         dest=dest,
                         name=requirement['name']
                     )
-                except (exceptions.DirectoryDoesNotExists,
+                except (exceptions.DirectoryDoesNotExist,
                         TypeError,
                         FileNotFoundError) as e:
                     # Write current state to lock
@@ -154,10 +156,10 @@ def install(ctx, upgrade, requirements):
                     # Exit with message
                     util.sysexit_with_message(e)
 
-
                 # No exceptions add to new_lock since succesfull download
                 if requirement['name'] in current_lock:
-                    LOG.success("{requirement} successfully updated to {version}".format(
+                    LOG.success("{requirement} successfully updated to \
+                        {version}".format(
                             requirement=requirement['name'],
                             version=source.version
                         )

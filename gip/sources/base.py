@@ -26,7 +26,7 @@ class Source():
         :param dest: directory where to extract the archive to
         :param name: name of the folder of the extracted archive
         :param remove_src: boolean to enable removal of the source file
-        :raise exceptions.DirectoryDoesNotExists: directory does not exist
+        :raise exceptions.DirectoryDoesNotExist: directory does not exist
         :raise FileNotFoundError: source does not exist
         :raise TypeError: archive is of an unsupported type
         """
@@ -35,12 +35,12 @@ class Source():
 
         # Raise error when destination directory does not exists
         if not dest.is_dir():
-            raise exceptions.DirectoryDoesNotExists(dest)
+            raise exceptions.DirectoryDoesNotExist(dest)
 
         # Raise error when archive does not exists
         if not src.is_file():
             raise FileNotFoundError("Archive not found: {archive}".format(
-                            archive=archive_dest
+                            archive=src
                         ))
 
         if tarfile.is_tarfile(src):
@@ -54,15 +54,16 @@ class Source():
             if name:
                 extracted_folder_name = archive.getmembers()[0].name
                 dest = pathlib.PurePath(dest)
-                extracted_archive = pathlib.Path(dest.joinpath(extracted_folder_name))
+                extracted_archive = pathlib.Path(
+                                        dest.joinpath(extracted_folder_name))
 
                 # Thrown error when for some reaseon the extraction has failed
                 if not extracted_archive.is_dir():
-                    raise exceptions.DirectoryDoesNotExists(extracted_archive)
+                    raise exceptions.DirectoryDoesNotExist(extracted_archive)
 
                 extracted_archive.rename(dest.joinpath(name))
         else:
-            raise TypeError("Downloaded archive is of a non supported archive type: \
-                        {archive}".format(
-                            archive=archive_dest
-                        ))
+            raise TypeError("Downloaded archive is of a non supported \
+                            archive type: {archive}".format(
+                                archive=src
+                            ))
