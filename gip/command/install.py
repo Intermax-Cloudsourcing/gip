@@ -1,3 +1,4 @@
+import shutil
 import click
 import pathlib
 
@@ -13,29 +14,33 @@ LOG = logger.get_logger(__name__)
 @click.command()
 @click.pass_context
 @click.option(
+    '--upgrade',
+    help='Bring versions to what is specified in requirements.yml',
+    type=bool
+)
+@click.option(
     '--requirements',
     '-r',
-    help='Requirements file to install')
-def install(ctx, requirements):
+    help='Requirements file to install',
+    type=click.Path(
+        exists=True,
+    )
+)
+def install(ctx, upgrade, requirements):
     """
-    Install dependencies
+    Install dependencies, if already present just skips when version checking is required, pass --upgrade.
+
+    :param ctx: click object containing the arguments from global
+    :param upgrade: boolean whenever upgrading is enabled
+    :param requirements: click path object poiting to requirements file
     """
     args = ctx.obj.get('args')
 
-    # Set passed requirement path as variable
-    requirements_path = pathlib.Path(requirements)
-
     # Parse requirements file to Python object
-    if requirements_path.is_file():
-        requirements = _parse_and_validate(
-            path=requirements_path,
-            type='requirements'
-        )
-    else:
-        util.sysexit_with_message("Passed requirement file does not exist: \
-        {path}".format(
-            path=requirements_path
-        ))
+    requirements = _parse_and_validate(
+        path=requirements,
+        type='requirements'
+    )
 
     # After parsing check if a token is mandatory or advised
     if (any(d['type'] == 'gitlab' for d in requirements) and
@@ -52,7 +57,7 @@ def install(ctx, requirements):
         )
 
     # Init lockfile
-    locks_path = pathlib.Path(args['lock_file'])
+    locks_path = pathlib.Path(args['lock_file']).resolve()
 
     # Init current_lock list
     current_lock = {}
@@ -70,7 +75,7 @@ def install(ctx, requirements):
     new_lock = {}
     # Loop requirements for downloading
     for requirement in requirements:
-        if requirement['name'] in current_lock:
+        if requirement['name'] in current_lock and not upgrade:
             LOG.info("{requirement} already installed, skipping".format(
                 requirement=requirement['name'])
             )
@@ -80,85 +85,88 @@ def install(ctx, requirements):
                     # Init Gitlab object
                     source = sources.gitlab.Gitlab(
                         repo=requirement['repo'],
-                        version=requirement['version'],
+                        version=requirement.get('version'),
                         token=args['gitlab_token']
                     )
                 elif requirement['type'] == 'github':
                     # Init Github object
                     source = sources.github.Github(
                         repo=requirement['repo'],
-                        version=requirement['version'],
+                        version=requirement.get('version'),
                         token=args['github_token']
                     )
-            except exceptions.RepoNotFound as e:
-                util.sysexit_with_message(e)
-            except exceptions.HttpError as e:
-                util.sysexit_with_message(e)
-            except exceptions.AuthenticationError as e:
+            except (exceptions.RepoNotFound,
+                    exceptions.HttpError,
+                    exceptions.AuthenticationError) as e:
                 util.sysexit_with_message(e)
 
-            # Convert dest to absolute path
-            dest = pathlib.Path(requirement['dest']).resolve()
-            # Create archive name (ex. ansible-role-plex.tar.gz)
-            archive_name = "{}.tar.gz".format(requirement['name'])
-            # Append name to destination directory
-            archive_dest = dest.joinpath(archive_name)
-
-            # Get the archive
-            try:
-                source.get_archive(
-                    dest=archive_dest
-                )
-            except FileNotFoundError:
-                # Write current state to lock
-                _write_lock_file(
-                    path=locks_path,
-                    current_lock=current_lock,
-                    new_lock=new_lock
-                )
-                util.sysexit_with_message(
-                    "Destination directory for {name} ({dest}) \
-                    does not exist".format(
-                        name=requirement['name'],
-                        dest=dest
-                    )
-                )
-
-            # Extract archive to location
-            try:
-                source.untar_archive(
-                    src=archive_dest,
-                    dest=dest,
-                    name=requirement['name']
-                )
-            except Exception as e:
-                # Write current state to lock
-                _write_lock_file(
-                    path=locks_path,
-                    current_lock=current_lock,
-                    new_lock=new_lock
-                )
-                # Set better description for generic Python errors
-                if type(e) is FileNotFoundError:
-                    e = "Archive not found: {archive}".format(
-                        archive=archive_dest
-                    )
-                    util.sysexit_with_message(e)  # No need for remove
-                elif type(e) is TypeError:
-                    e = "Downloaded archive is not a valid tar archive: \
-                    {archive}".format(
-                        archive=archive_dest
-                    )
-                # Cleanup archive
-                util.remove_file(archive_dest)
-                # Exit with message
-                util.sysexit_with_message(e)
-
-            # No exceptions add to new_lock since succesfull download
-            LOG.success("{requirement} successfully installed".format(
+            if source.get_commit_hash() == current_lock.get(requirement['name']):
+                LOG.info("{requirement} already the current version, skipping".format(
                     requirement=requirement['name'])
                 )
-            new_lock[requirement['name']] = source.get_commit_hash()
+            else:
+                # Convert dest to absolute path
+                dest = pathlib.Path(requirement.get('dest', '')).resolve()
+                # Create archive name (ex. ansible-role-plex.tar.gz)
+                archive_name = "{}.tar.gz".format(requirement['name'])
+                # Append name to destination directory
+                archive_dest = dest.joinpath(archive_name)
+
+                # Remove old versions if existing
+                test = dest.joinpath(requirement['name'])
+                if test.is_dir():
+                    shutil.rmtree(test)
+
+                # Get the archive
+                try:
+                    source.get_archive(
+                        dest=archive_dest
+                    )
+                except (exceptions.DirectoryDoesNotExists,
+                        exceptions.AuthenticationError,
+                        exceptions.ArchiveNotFound) as e:
+                    # Write current state to lock
+                    _write_lock_file(
+                        path=locks_path,
+                        current_lock=current_lock,
+                        new_lock=new_lock
+                    )
+                    util.sysexit_with_message(e)
+
+                # Extract archive to location
+                try:
+                    source.extract_archive(
+                        src=archive_dest,
+                        dest=dest,
+                        name=requirement['name']
+                    )
+                except (exceptions.DirectoryDoesNotExists,
+                        TypeError,
+                        FileNotFoundError) as e:
+                    # Write current state to lock
+                    _write_lock_file(
+                        path=locks_path,
+                        current_lock=current_lock,
+                        new_lock=new_lock
+                    )
+                    # Cleanup archive
+                    util.remove_file(archive_dest)
+                    # Exit with message
+                    util.sysexit_with_message(e)
+
+
+                # No exceptions add to new_lock since succesfull download
+                if requirement['name'] in current_lock:
+                    LOG.success("{requirement} successfully updated to {version}".format(
+                            requirement=requirement['name'],
+                            version=source.version
+                        )
+                    )
+                else:
+                    LOG.success("{requirement} successfully installed".format(
+                        requirement=requirement['name'])
+                    )
+                new_lock[requirement['name']] = source.get_commit_hash()
 
     # End for loop
     _write_lock_file(
@@ -171,6 +179,10 @@ def install(ctx, requirements):
 def _write_lock_file(path, current_lock, new_lock):
     """
     Write current state to lock file
+
+    :param path: path of the current lock file and where to write to
+    :param current_lock: dict containing the lock before executing gip
+    :param new_lock: dict container the new lock
     """
     # Check if new_lock has data
     if new_lock:
@@ -189,7 +201,13 @@ def _write_lock_file(path, current_lock, new_lock):
 
 
 def _parse_and_validate(path, type):
-    """ Parse and validate lock or requirements file """
+    """
+    Parse and validate file against Cerberus scheme
+
+    :param path: path to file
+    :param type: one of the modeltypes available in model.scheme
+    :return: parsed and validated data
+    """
     try:
         data = util.read_yaml(path=path)
     except exceptions.ParserError as e:

@@ -1,6 +1,6 @@
 import yaml
 import sys
-import os
+import pathlib
 
 from gip import logger
 from gip import exceptions
@@ -9,12 +9,11 @@ LOG = logger.get_logger(__name__)
 
 
 def read_yaml(path):
-    """Parse YAML file to Python object
+    """
+    Parse YAML file to Python object
 
     :param path: path to yamlfile
-    :type path: pathlib.Path
-
-    :rtype: dict
+    :return: python object
     """
     # TODO: Rewrite to with open
     try:
@@ -33,12 +32,10 @@ def read_yaml(path):
 
 
 def write_yaml(path, data):
-    """Write Python object to YAML
+    """
+    Write Python object to YAML
 
     :param path: path to yamlfile
-    :type path: pathlib.Path
-
-    :rtype: None
     """
     # TODO: Rewrite to with open
     try:
@@ -72,9 +69,11 @@ def sysexit_with_message(msg, code=1):
 def remove_file(path):
     """
     Remove file from disk
+
+    :param path: path to file to remove
     """
     # TODO: fix some exception handling
-    os.remove(path)
+    pathlib.Path(path).unlink()
 
 
 def merge_dicts(*dict_args):

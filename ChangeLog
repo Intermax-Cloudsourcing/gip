@@ -1,6 +1,19 @@
 CHANGES
 =======
 
+* cleanup: Removes giplock and adds to gitignore
+* cleanup: Removes unneeded function
+* feat: Complete lockfile implementation, rework of Cerberus scheme and lock format
+* WIP push before reinstall
+* Removes required token, just warn about rate limiting
+* WIP: Cannot seem to remove stacktrace from messages
+* Finish Cerberus file validation
+* WIP scheme created as model but not yet working
+
+0.0.1
+-----
+
+* Working example
 * Working setup with click
 * WIP but base architecture is done
 * First dir structure

@@ -1,6 +1,9 @@
 ---
 image: docker:git
 
+tags:
+  - docker
+
 services:
   - docker:dind
 
@@ -8,10 +11,31 @@ stages:
   - lint
 
 before_script:
-  - apk add python3
-  - pip3 install flake8
+  - apk add python3 make
 
 lint:
   stage: lint
   script:
-    - flake8 .
+  - pip3 install flake8
+  - flake8 .
+
+build:
+  stage: build
+  script:
+    - pip3 install -r build-requirements.txt
+    - make -f build/Makefile build
+  artifacts:
+    paths:
+      - dist/
+
+release:
+  stage: release
+  only:
+    - tags
+  except:
+    - branches
+  dependencies:
+    - build
+  script:
+    - pip3 install -r build-requirements.txt
+    - make -f build/Makefile ci-push

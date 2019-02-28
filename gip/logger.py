@@ -102,8 +102,7 @@ def _get_info_handler():
     handler = logging.StreamHandler(sys.stdout)
     handler.setLevel(logging.INFO)
     handler.addFilter(LogFilter(logging.INFO))
-    handler.setFormatter(
-        TrailingNewlineFormatter('--> {}'.format(cyan_text('%(message)s'))))
+    handler.setFormatter(TrailingNewlineFormatter(cyan_text('%(message)s')))
 
     return handler
 

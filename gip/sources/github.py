@@ -1,3 +1,4 @@
+import pathlib
 import github3
 
 from gip import logger
@@ -8,11 +9,23 @@ LOG = logger.get_logger(__name__)
 
 
 class Github(base.Source):
-    """ Github source """
+    """
+    Github source
+    """
 
     def __init__(self, repo, version, token):
+        """
+        Inits Github source
+
+        :param repo: url to repository
+        :param version: repository version, tag, branch name or commit sha. Defaults to master
+        :param token: github api token
+        :raise exceptions.AuthenticationError: could not authenticate with Github
+        :raise exceptions.HttpError: could not connect to Github
+        :raise exceptions.RepoNotFound: repository not found
+        """
         # Set version
-        self.version = version
+        self.version = version or 'master'
 
         # Init Github object
         try:
@@ -32,7 +45,18 @@ class Github(base.Source):
             raise exceptions.RepoNotFound(repo=repo)
 
     def get_archive(self, dest):
-        """ Downloads archive in dest_dir"""
+        """
+        Downloads archive in dest_dir
+
+        :param dest: path where to download the archive to
+        :raise exceptions.DirectoryDoesNotExists: destination directory does not exist
+        :raise exceptions.ArchiveNotFound: archive not found
+        """
+        # Raise error when destination directory does not exists
+        dest = pathlib.Path(dest)
+        if not dest.parent.is_dir():
+            raise exceptions.DirectoryDoesNotExists(dest)
+
         # Download repository archive to dest
         result = self.repository.archive(
             format='tarball',
@@ -46,13 +70,23 @@ class Github(base.Source):
             )
 
     def get_owner(self, url):
-        """ Get owner name from repo url"""
+        """
+        Get owner name from repo url
+
+        :param url: url to repository
+        :return: repository owner
+        """
         # Split owner from url
         owner = url.split("/")[3]
         return owner
 
     def get_repo_name(self, url):
-        """ Get repo name from repo url """
+        """
+        Get repo name from repo url
+
+        :param url: url to repository
+        :return: repository name
+        """
         if url[-4:] == ".git":
             # Remove .git from url
             url = url[:-4]
@@ -61,7 +95,11 @@ class Github(base.Source):
         return repo_name
 
     def get_commit_hash(self):
-        """ Get commit hash for this source """
+        """
+        Get commit hash for this source
+
+        :return: commit hash for source
+        """
         commits = self.repository.commits(
             sha=self.version,
             number=1
