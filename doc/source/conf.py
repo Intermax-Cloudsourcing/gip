@@ -10,8 +10,6 @@ import sys
 import os
 import datetime
 
-import gip
-
 # -- Path setup --------------------------------------------------------------
 
 # If extensions (or modules to document with autodoc) are in another directory,
