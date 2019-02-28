@@ -1,6 +1,11 @@
 CHANGES
 =======
 
+* fix(Makefile): Switch to Python3
+* chore: More pep8 compat fixes
+* chore: PEP8 compat fixes
+* fix(ci): Fix syntax for tags and stages
+* Implement idempotence and -upgrade command
 * cleanup: Removes giplock and adds to gitignore
 * cleanup: Removes unneeded function
 * feat: Complete lockfile implementation, rework of Cerberus scheme and lock format
