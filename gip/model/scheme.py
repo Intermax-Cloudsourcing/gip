@@ -1,49 +1,50 @@
 import cerberus
 from gip import exceptions
 
-locks = {
-    'dict': {
-        'type': 'dict',
-        'keyschema': {
-            'type': 'string',
-            'regex': '^[a-z-]+$'
-        },
-        'valueschema': {
-            'type': 'string',
-            'regex': '^[0-9a-z]+$'
-        },
-        'allow_unknown': True
-    }
-}
-
-requirements = {
-    'dict': {
-        'type': 'list',
-        'schema': {
+models = {
+    'locks': {
+        'dict': {
             'type': 'dict',
+            'keyschema': {
+                'type': 'string',
+                'regex': '^[a-z-]+$'
+            },
+            'valueschema': {
+                'type': 'string',
+                'regex': '^[0-9a-z]+$'
+            },
+            'allow_unknown': True
+        }
+    },
+    'requirements': {
+        'dict': {
+            'type': 'list',
             'schema': {
-                'name': {
-                    'type': 'string',
-                    'regex': '^[a-z-]+$',
-                    'required': True
-                },
-                'repo': {
-                    'type': 'string',
-                    'required': True
-                },
-                'type': {
-                    'type': 'string',
-                    'required': True,
-                    'allowed': [
-                        'gitlab',
-                        'github'
-                    ]
-                },
-                'version': {
-                    'type': 'string'
-                },
-                'dest': {
-                    'type': 'string'
+                'type': 'dict',
+                'schema': {
+                    'name': {
+                        'type': 'string',
+                        'regex': '^[a-z-]+$',
+                        'required': True
+                    },
+                    'repo': {
+                        'type': 'string',
+                        'required': True
+                    },
+                    'type': {
+                        'type': 'string',
+                        'required': True,
+                        'allowed': [
+                            'gitlab',
+                            'github'
+                        ]
+                    },
+                    'version': {
+                        'type': 'string'
+                    },
+                    'dest': {
+                        'type': 'string'
+                    }
                 }
             }
         }
@@ -53,15 +54,20 @@ requirements = {
 
 def validate(type, data):
     """
-    TODO: Write doc
+    Validate types against scheme
+
+    :param type: one of the keys in the models dict
+    :param data: data to validate against the scheme
+    :raise exceptions.ValidationError: if data not valid
     """
-    if type == 'locks':
-        validator = cerberus.Validator(locks)
-    elif type == 'requirements':
-        validator = cerberus.Validator(requirements)
+    try:
+        validator = cerberus.Validator(models[type])
+    except KeyError:
+        raise exceptions.ValidationError(errors={
+            'No matching type found for validation'
+        })
 
     # Add data to dict, Cerberus only works with dicts, not lists
-
     if validator.validate({'dict': data}):
         return True  # Valid data according to scheme
     else:

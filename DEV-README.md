@@ -18,7 +18,11 @@ python setup.py develop
             "request": "launch",
             "program": "${workspaceFolder}/venv/bin/gip",
             "args" : ["--gitlab-token=<token>",
-                "install", "-r", "tests/requirements.yml"],
+                "--github-token=<token>",
+                "--lock-file=./lib/.giplock.yml",
+                "install", "-r", "tests/requirements.yml",
+                "--upgrade=true"
+            ],
             "console": "integratedTerminal"
         }
     ]

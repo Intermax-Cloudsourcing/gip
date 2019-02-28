@@ -1,4 +1,5 @@
 import gitlab
+import pathlib
 from urllib.parse import urlsplit
 
 from gip import logger
@@ -12,8 +13,18 @@ class Gitlab(base.Source):
     """ Gitlab source """
 
     def __init__(self, repo, version, token):
-        # Set constants
-        self.version = version
+        """
+        Inits Gitlab source
+
+        :param repo: url to repository
+        :param version: Tag, branch name or commit sha, defaults to master
+        :param token: gitlab api token
+        :raise exceptions.AuthenticationError: could not authenticate
+        :raise exceptions.HttpError: could not connect
+        :raise exceptions.RepoNotFound: repository not found
+        """
+        # Set version
+        self.version = version or 'master'
 
         # Init Gitlab connection
         try:
@@ -36,12 +47,26 @@ class Gitlab(base.Source):
             raise exceptions.RepoNotFound(repo)
 
     def get_archive(self, dest):
-        """ Downloads archive in dest_dir"""
+        """
+        Downloads archive in dest_dir
+
+        :param dest: path where to download the archive to
+        :raise exceptions.DirectoryDoesNotExist: destination dir does not exist
+        :raise exceptions.AuthenticationError: could not authenticate
+        :raise exceptions.ArchiveNotFound: archive not found
+        """
+        # Raise error when destination directory does not exists
+        dest = pathlib.Path(dest)
+        if not dest.parent.is_dir():
+            raise exceptions.DirectoryDoesNotExist(dest)
+
         # Get project archive
         try:
             with open(dest, "wb") as f:
                 self.project.repository_archive(
                     sha=self.version, streamed=True, action=f.write)
+        except FileNotFoundError:
+            raise exceptions.DirectoryDoesNotExist(dest)
         except gitlab.GitlabAuthenticationError:
             raise exceptions.AuthenticationError(url=self.project.web_url)
         except gitlab.GitlabListError:
@@ -51,12 +76,20 @@ class Gitlab(base.Source):
             )
 
     def get_commit_hash(self):
-        """ Get commit hash for this source """
+        """
+        Get commit hash for this source
+
+        :return: commit hash for source
+        """
         commits = self.project.commits.list(ref_name=self.version)
         return commits[0].id
 
     def _get_project_path(self, repo):
-        """ Returns project path of repo url """
+        """
+        Get project path of repo url
+
+        :return: project path of source
+        """
         # Removes leading slash
         path = urlsplit(repo).path[1:]
         if path[-4:] == ".git":
@@ -65,7 +98,11 @@ class Gitlab(base.Source):
         return path
 
     def _get_base_url(self, repo):
-        """ Return base url of repo url"""
+        """
+        Get base url of repository url
+
+        :return: base url of Gitlab instance
+        """
         # Split repo url in parts
         split_url = urlsplit(repo)
         return "{0}://{1}".format(split_url.scheme, split_url.netloc)

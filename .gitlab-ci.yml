@@ -6,12 +6,41 @@ services:
 
 stages:
   - lint
+  - build
+  - release
 
 before_script:
-  - apk add python3
-  - pip3 install flake8
+  - apk add python3 make
 
 lint:
   stage: lint
+  tags:
+    - docker
   script:
+    - pip3 install flake8
     - flake8 .
+
+build:
+  stage: build
+  tags:
+    - docker
+  script:
+    - pip3 install -r build-requirements.txt
+    - make -f build/Makefile build
+  artifacts:
+    paths:
+      - dist/
+
+release:
+  stage: release
+  tags:
+    - docker
+  only:
+    - tags
+  except:
+    - branches
+  dependencies:
+    - build
+  script:
+    - pip3 install -r build-requirements.txt
+    - make -f build/Makefile ci-push
