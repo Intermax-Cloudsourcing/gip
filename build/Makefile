@@ -5,7 +5,7 @@ clean:
 
 build: clean
 	@echo "+ $@"
-	python setup.py sdist bdist_wheel
+	python3 setup.py sdist bdist_wheel
 
 push:
 	@echo "+ $@"
