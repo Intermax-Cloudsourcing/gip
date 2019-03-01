@@ -11,8 +11,4 @@ push:
 	@echo "+ $@"
 	twine upload dist/* -r pypi
 
-ci-push:
-	@echo "+ $@"
-	twine upload -u $(PYPI_USERNAME) -p $(PYPI_PASSWORD) dist/* -r pypi
-
 .PHONY: build
