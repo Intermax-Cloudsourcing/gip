@@ -43,4 +43,4 @@ release:
     - build
   script:
     - pip3 install -r build-requirements.txt
-    - make -f build/Makefile ci-push
+    - make -f build/Makefile push
