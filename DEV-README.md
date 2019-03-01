@@ -1,18 +1,9 @@
-# Gip
+# DEV-README
 
-## Usage
+## Dev setup with pip
+
 ```bash
-gip --gitlab-token=<token> --github-token=<token> requirements.yml
-```
-
-## Requirements.yml
-
-```yaml
-- name: ansible-role-plex  # directory name in destination directory
-  repo: https://github.com/wilmardo/ansible-role-plex  # repository url
-  type: github  # type: gitlab or github allowed
-  version: 2.1.0  # version: tag, branch name or commit sha
-  dest: lib/  # destination directory
+python setup.py develop
 ```
 
 ## Visual Studio Code Setup
@@ -28,13 +19,15 @@ gip --gitlab-token=<token> --github-token=<token> requirements.yml
             "program": "${workspaceFolder}/venv/bin/gip",
             "args" : ["--gitlab-token=<token>",
                 "--github-token=<token>",
-                "install", "-r", "tests/requirements.yml"],
+                "--lock-file=./lib/.giplock.yml",
+                "install", "-r", "tests/requirements.yml",
+                "--upgrade=true"
+            ],
             "console": "integratedTerminal"
         }
     ]
 }
 ```
-
 
 ## Release
 ```bash
