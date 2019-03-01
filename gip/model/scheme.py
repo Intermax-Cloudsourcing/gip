@@ -7,7 +7,7 @@ models = {
             'type': 'dict',
             'keyschema': {
                 'type': 'string',
-                'regex': '^[a-z-]+$'
+                'regex': '^[0-9a-z-_]+$'  # Regex must match requirements.name
             },
             'valueschema': {
                 'type': 'string',
@@ -24,7 +24,7 @@ models = {
                 'schema': {
                     'name': {
                         'type': 'string',
-                        'regex': '^[a-z-]+$',
+                        'regex': '^[0-9a-z-_]+$',
                         'required': True
                     },
                     'repo': {
