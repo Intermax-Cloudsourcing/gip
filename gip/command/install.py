@@ -102,7 +102,8 @@ def install(ctx, upgrade, requirements):
 
             if source.get_commit_hash() == \
                     current_lock.get(requirement['name']):
-                LOG.info("{requirement} already the current version, " \
+                LOG.info(
+                    "{requirement} already the current version, "
                     "skipping".format(
                         requirement=requirement['name'])
                     )
