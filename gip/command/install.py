@@ -98,12 +98,12 @@ def install(ctx, upgrade, requirements):
             except (exceptions.RepoNotFound,
                     exceptions.HttpError,
                     exceptions.AuthenticationError) as e:
-                util.sysexit_with_message(e)
+                util.sysexit_with_message(str(e))
 
             if source.get_commit_hash() == \
                     current_lock.get(requirement['name']):
-                LOG.info("{requirement} already the current version, \
-                    skipping".format(
+                LOG.info("{requirement} already the current version, " \
+                    "skipping".format(
                         requirement=requirement['name'])
                     )
             else:
@@ -133,7 +133,7 @@ def install(ctx, upgrade, requirements):
                         current_lock=current_lock,
                         new_lock=new_lock
                     )
-                    util.sysexit_with_message(e)
+                    util.sysexit_with_message(str(e))
 
                 # Extract archive to location
                 try:
@@ -154,7 +154,7 @@ def install(ctx, upgrade, requirements):
                     # Cleanup archive
                     util.remove_file(archive_dest)
                     # Exit with message
-                    util.sysexit_with_message(e)
+                    util.sysexit_with_message(str(e))
 
                 # No exceptions add to new_lock since succesfull download
                 if requirement['name'] in current_lock:
@@ -213,7 +213,7 @@ def _parse_and_validate(path, type):
     try:
         data = util.read_yaml(path=path)
     except exceptions.ParserError as e:
-        util.sysexit_with_message(e)
+        util.sysexit_with_message(str(e))
 
     # Validate requirements file
     try:
