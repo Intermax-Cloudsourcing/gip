@@ -1,3 +1,23 @@
+class CommitHashNotFound(Exception):
+    """
+    Exception thrown when commit hash not found
+    """
+
+    def __init__(self, repo, version):
+        """
+        Inits CommitHashNotFound
+
+        :param repo: url of the repository
+        :param version: version of the archive
+        """
+        self.repo = repo
+        self.version = version
+
+    def __str__(self):
+        return "Commit hash not found: {repo}@{version}".format(
+            repo=self.repo,
+            version=self.version)
+
 class ArchiveNotFound(Exception):
     """
     Exception thrown when archive not found

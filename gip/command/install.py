@@ -44,13 +44,13 @@ def install(ctx, upgrade, requirements):
 
     # After parsing check if a token is mandatory or advised
     if (any(d['type'] == 'gitlab' for d in requirements) and
-            args['gitlab_token'] is None):
+            not args['gitlab_token']):
         util.sysexit_with_message(
             "Gitlab repo in requirements but no token passed, \
             use --gitlab-token"
         )
     if (any(d['type'] == 'github' for d in requirements) and
-            args['github_token'] is None):
+            not args['github_token']):
         util.sysexit_with_message(
             "Github repo in requirements but no token passed, \
             use --github-token"
@@ -100,7 +100,12 @@ def install(ctx, upgrade, requirements):
                     exceptions.AuthenticationError) as e:
                 util.sysexit_with_message(str(e))
 
-            if source.get_commit_hash() == \
+            try:
+              commit_sha = source.get_commit_hash()
+            except exceptions.CommitHashNotFound as e:
+              util.sysexit_with_message(str(e))
+
+            if commit_sha == \
                     current_lock.get(requirement['name']):
                 LOG.info(
                     "{requirement} already the current version, "
@@ -169,7 +174,11 @@ def install(ctx, upgrade, requirements):
                     LOG.success("{requirement} successfully installed".format(
                         requirement=requirement['name'])
                     )
-                new_lock[requirement['name']] = source.get_commit_hash()
+
+                try:
+                  new_lock[requirement['name']] = source.get_commit_hash()
+                except exceptions.CommitHashNotFound as e:
+                  util.sysexit_with_message(str(e))
 
     # End for loop
     _write_lock_file(

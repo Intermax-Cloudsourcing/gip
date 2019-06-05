@@ -82,7 +82,13 @@ class Gitlab(base.Source):
         :return: commit hash for source
         """
         commits = self.project.commits.list(ref_name=self.version)
-        return commits[0].id
+        try:
+          return commits[0].id
+        except IndexError:
+          raise exceptions.CommitHashNotFound(
+            repo=self.project.web_url,
+            version=self.version
+          )
 
     def _get_project_path(self, repo):
         """
