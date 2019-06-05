@@ -31,7 +31,7 @@ python setup.py develop
 
 ## Release
 ```bash
-pip install -r test-requirements.txt
+pip install -r build-requirements.txt
 make -f build/Makefile clean
 make -f build/Makefile build
 make -f build/Makefile push

@@ -18,6 +18,7 @@ class CommitHashNotFound(Exception):
             repo=self.repo,
             version=self.version)
 
+
 class ArchiveNotFound(Exception):
     """
     Exception thrown when archive not found

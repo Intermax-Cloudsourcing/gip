@@ -101,12 +101,11 @@ def install(ctx, upgrade, requirements):
                 util.sysexit_with_message(str(e))
 
             try:
-              commit_sha = source.get_commit_hash()
+                commit_sha = source.get_commit_hash()
             except exceptions.CommitHashNotFound as e:
-              util.sysexit_with_message(str(e))
+                util.sysexit_with_message(str(e))
 
-            if commit_sha == \
-                    current_lock.get(requirement['name']):
+            if commit_sha == current_lock.get(requirement['name']):
                 LOG.info(
                     "{requirement} already the current version, "
                     "skipping".format(
@@ -176,9 +175,9 @@ def install(ctx, upgrade, requirements):
                     )
 
                 try:
-                  new_lock[requirement['name']] = source.get_commit_hash()
+                    new_lock[requirement['name']] = source.get_commit_hash()
                 except exceptions.CommitHashNotFound as e:
-                  util.sysexit_with_message(str(e))
+                    util.sysexit_with_message(str(e))
 
     # End for loop
     _write_lock_file(
